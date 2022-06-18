@@ -1,6 +1,6 @@
 {
-  "username": "postgres",
-  "password": "docker",
+  "username": "xcall",
+  "password": "1324",
 
   "name": "default",
   "type": "postgres",

@@ -1,0 +1,18 @@
+version: "3.7"
+services:
+  database:
+    image: postgres
+    container_name: fin_api
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=xcall
+      - POSTGRES_PASSWORD=1324
+      - POSTGRES_DB=fin_api
+    volumes:
+      - ./pgdata_api:/data/postgres
+
+volumes:
+  pgdata_api:
+    driver: local
