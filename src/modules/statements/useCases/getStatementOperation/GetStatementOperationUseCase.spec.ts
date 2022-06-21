@@ -1,19 +1,22 @@
 import { InMemoryUsersRepository } from "../../../users/repositories/in-memory/InMemoryUsersRepository";
 import { AuthenticateUserUseCase } from "../../../users/useCases/authenticateUser/AuthenticateUserUseCase";
 import { CreateUserUseCase } from "../../../users/useCases/createUser/CreateUserUseCase";
+import { OperationType } from "../../entities/Statement";
 import { InMemoryStatementsRepository } from "../../repositories/in-memory/InMemoryStatementsRepository";
-import { CreateStatementUseCase } from "./CreateStatementUseCase";
-import { OperationType } from '../../entities/Statement';
-import { AppError } from "../../../../shared/errors/AppError";
+import { CreateStatementUseCase } from "../createStatement/CreateStatementUseCase";
+import { GetStatementOperationUseCase } from "./GetStatementOperationUseCase";
+
 
 let inMemoryStatementsRepository: InMemoryStatementsRepository;
-let createStatementUseCase: CreateStatementUseCase;
 let inMemoryUsersRepository: InMemoryUsersRepository;
 let createUserUseCase: CreateUserUseCase;
 let authenticateUserUseCase: AuthenticateUserUseCase;
+let createStatementUseCase: CreateStatementUseCase;
+let getStatementOperationUseCase: GetStatementOperationUseCase;
+
 let userLogin: any;
 
-describe("Create Operation", () => {
+describe("Get Operation", () => {
   const user = {
     name: 'teste',
     email: 'teste@example.com',
@@ -27,38 +30,17 @@ describe("Create Operation", () => {
 
     inMemoryStatementsRepository = new InMemoryStatementsRepository();
     createStatementUseCase = new CreateStatementUseCase(inMemoryUsersRepository, inMemoryStatementsRepository);
+    getStatementOperationUseCase = new GetStatementOperationUseCase(inMemoryUsersRepository, inMemoryStatementsRepository);
 
     await createUserUseCase.execute(user);
     userLogin = await authenticateUserUseCase.execute({
       email: user.email, password: user.password
     });
-
   });
 
-  it("should be able a create new deposit a existing user", async () => {
+  it("should be able to record a withdrawal or deposit for registered user", async () => {
     const user_id = userLogin.user.id;
-
     const deposit = await createStatementUseCase.execute({
-      user_id: user_id,
-      amount: 150.55,
-      description: "deposit",
-      type: "deposit" as OperationType
-    });
-
-    expect(deposit).toEqual(
-      expect.objectContaining({
-        user_id: deposit.user_id,
-        amount: deposit.amount,
-        description: deposit.description,
-        type: deposit.type
-      })
-    );
-  });
-
-  it("should be able a create new withdraw a existing user", async () => {
-    const user_id = userLogin.user.id;
-
-    await createStatementUseCase.execute({
       user_id: user_id,
       amount: 150.55,
       description: "deposit",
@@ -67,31 +49,21 @@ describe("Create Operation", () => {
 
     const withdraw = await createStatementUseCase.execute({
       user_id: user_id,
-      amount: 150.55,
+      amount: 50.53,
       description: "withdraw",
-      type: "withdraw" as OperationType
+      type: "deposit" as OperationType
+    });
+    const statement_withdraw = await getStatementOperationUseCase.execute({
+      user_id,
+      statement_id: withdraw.id
     });
 
-    expect(withdraw).toEqual(
-      expect.objectContaining({
-        user_id: withdraw.user_id,
-        amount: withdraw.amount,
-        description: withdraw.description,
-        type: withdraw.type
-      })
-    );
+    const statement_deposit = await getStatementOperationUseCase.execute({
+      user_id,
+      statement_id: deposit.id
+    });
+    expect(statement_deposit).toHaveProperty("type");
+    expect(statement_withdraw).toHaveProperty("type");
   });
 
-  it("should not be able to do a withdraw with insufficient amount", async () => {
-    const user_id = userLogin.user.id;
-
-    expect(async () => {
-      await createStatementUseCase.execute({
-        user_id: user_id,
-        amount: 151.55,
-        description: "withdraw",
-        type: "withdraw" as OperationType
-      })
-    }).rejects.toEqual(new AppError("Insufficient funds", 400));
-  });
 });
